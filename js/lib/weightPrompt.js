@@ -5,8 +5,12 @@
 import { state, logWeight } from '../state.js';
 import { TODAY } from './dates.js';
 
+// Accepts either "98.5" or "98,5" — comma and period are treated the same
+// as a decimal separator, since plenty of keyboards/locales default to comma.
+const toKg = (raw) => parseFloat(String(raw).trim().replace(',', '.'));
+
 export function attemptLogWeight(raw) {
-  const n = parseFloat(raw);
+  const n = toKg(raw);
   if (isNaN(n)) return;
 
   const existing = state.data.weights.find((w) => w.date === TODAY);
@@ -43,7 +47,7 @@ function openOverwriteModal(oldKg, attemptedKg) {
   host.addEventListener('click', (e) => { if (e.target === host) close(); });
   host.querySelector('#wmCancel').onclick = close;
   host.querySelector('#wmSave').onclick = () => {
-    const v = parseFloat(input.value);
+    const v = toKg(input.value);
     if (!isNaN(v)) { logWeight(v); close(); }
   };
 }
