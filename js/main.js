@@ -14,10 +14,10 @@ const VIEWS = { today: renderToday, food: renderFood, plan: renderPlan, progress
 
 const NAV = [
   ['today', 'Today', 'M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z'],
-  ['food', 'Food', 'M4 3v7a3 3 0 0 0 3 3v8M7 3v7M10 3v7M17 3c-1.5 0-2.5 2-2.5 5S16 13 17 13v8'],
   ['plan', 'Plan', 'M4 4h16v4H4zM4 10h16v10H4z'],
-  ['progress', 'Progress', 'M3 17l6-6 4 4 8-8'],
+  ['food', 'Food', 'M4 3v7a3 3 0 0 0 3 3v8M7 3v7M10 3v7M17 3c-1.5 0-2.5 2-2.5 5S16 13 17 13v8'],
   ['train', 'Train', 'M6 7v10M18 7v10M3 10h3M18 10h3M6 12h12'],
+  ['progress', 'Progress', 'M3 17l6-6 4 4 8-8'],
 ];
 
 function render() {
