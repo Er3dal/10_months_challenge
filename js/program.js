@@ -65,17 +65,47 @@ export function generateProgram(p) {
   const ends = [90, 180, 240, 300];
   const phases = PHASES.map((ph, i) => ({ ...ph, from: addDays(start, offsets[i]), to: addDays(start, ends[i]) }));
 
-  // Daily macro targets built around the primary calorie number.
-  // Protein is the anchor; fat ~25% of calories (a sensible floor); carbs fill the rest.
-  const dayTarget = cut;
-  const fat = Math.round((0.25 * dayTarget) / 9);
-  const carbs = Math.max(0, Math.round((dayTarget - protein * 4 - fat * 9) / 4));
-  const macros = { kcal: dayTarget, protein, fat, carbs };
-
   return {
-    bmr, tdee, cut, maintenance, surplus: maintenance + 180, protein, macros, mode, note,
+    bmr, tdee, cut, maintenance, surplus: maintenance + 180, protein, mode, note,
     bmi: Math.round(bmi * 10) / 10, start, steps: '8,000–10,000',
-    weeklyTarget: mode === 'cut' ? '0.4–0.6 kg down' : 'hold steady',
     phases, generatedAt: TODAY,
   };
+}
+
+// The plan's nutrition isn't one flat number for all 10 months — it follows
+// the phase map: Phases 1-2 hold a moderate deficit, Phase 3 eases back
+// toward maintenance, Phase 4 sits at maintenance (with a slight surplus
+// offered as an optional choice, not forced). Protein stays constant
+// throughout — it's the priority in every phase. This is the single place
+// that turns a program + a phase number into today's actual kcal/macro
+// target, so the Plan tab, Progress tab and Food tab all stay in sync.
+export function targetForPhase(program, phaseN) {
+  const { cut, maintenance, protein, surplus, mode } = program;
+
+  if (mode !== 'cut') {
+    const { fat, carbs } = splitMacros(maintenance, protein);
+    return { kcal: maintenance, protein, fat, carbs, tag: 'hold steady', hint: program.note };
+  }
+
+  let kcal, tag, hint;
+  if (phaseN <= 2) {
+    kcal = cut; tag = '0.4–0.6 kg down';
+    hint = 'Stalled 2–3 weeks? Trim about 200 kcal or add walking. Feeling wrecked? Eat a bit more.';
+  } else if (phaseN === 3) {
+    kcal = Math.round(((cut + maintenance) / 2) / 10) * 10; tag = 'easing to maintenance';
+    hint = `You're lean enough to ease up — let calories drift from ${cut.toLocaleString()} toward ${maintenance.toLocaleString()} over these two months rather than in one jump.`;
+  } else {
+    kcal = maintenance; tag = 'maintenance · optional surplus';
+    hint = `Hold roughly steady while your lifts, power and conditioning climb — that's recomposition. Want to keep adding muscle now you're lean? An optional slight surplus (~${surplus.toLocaleString()} kcal) works too.`;
+  }
+  const { fat, carbs } = splitMacros(kcal, protein);
+  return { kcal, protein, fat, carbs, tag, hint };
+}
+
+// fat ~25% of calories (a sensible floor); carbs fill the rest around the
+// fixed protein target.
+function splitMacros(kcal, protein) {
+  const fat = Math.round((0.25 * kcal) / 9);
+  const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
+  return { fat, carbs };
 }

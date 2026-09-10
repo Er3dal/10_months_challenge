@@ -1,4 +1,5 @@
-import { state, setDaily, logWeight, streak } from '../state.js';
+import { state, setDaily, streak } from '../state.js';
+import { attemptLogWeight } from '../lib/weightPrompt.js';
 import { MOBILITY, SUPPS } from '../program.js';
 import { TODAY } from '../lib/dates.js';
 import { $, val } from '../lib/dom.js';
@@ -45,5 +46,5 @@ export function renderToday(v) {
     e.currentTarget.setAttribute('aria-expanded', String(open));
   };
   v.querySelectorAll('.chip').forEach((c) => { c.onclick = () => setDaily(c.dataset.s, !d[c.dataset.s]); });
-  $('wqb').onclick = () => { const n = parseFloat(val('wq')); if (!isNaN(n)) logWeight(n); };
+  $('wqb').onclick = () => attemptLogWeight(val('wq'));
 }

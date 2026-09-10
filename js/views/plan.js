@@ -1,25 +1,29 @@
 import { profile, planNow } from '../state.js';
-import { PHASES } from '../program.js';
+import { PHASES, targetForPhase } from '../program.js';
 import { pretty } from '../lib/dates.js';
 
 export function renderPlan(v) {
   const pr = profile(), g = pr.program, pl = planNow();
-  const calLabel = g.mode === 'cut' ? 'Daily target (fat-loss)' : 'Daily target (maintenance)';
+  const t = targetForPhase(g, pl.phase.n);
+  const calLabel = g.mode !== 'cut' ? 'Daily target (maintenance)'
+    : pl.phase.n <= 2 ? 'Daily target (fat-loss)'
+    : pl.phase.n === 3 ? 'Daily target (easing to maintenance)'
+    : 'Daily target (maintenance)';
 
   v.innerHTML = `
     <div class="stack">
       <div class="card">
-        <div class="card-top"><h3>${calLabel}</h3><span class="tag">${g.weeklyTarget}</span></div>
-        <div class="big-cal cond">${g.cut.toLocaleString()} kcal</div>
+        <div class="card-top"><h3>${calLabel}</h3><span class="tag">${t.tag}</span></div>
+        <div class="big-cal cond">${t.kcal.toLocaleString()} kcal</div>
         <div>
-          <div class="kv"><span>Protein</span><b>${g.protein} g / day</b></div>
+          <div class="kv"><span>Protein</span><b>${t.protein} g / day</b></div>
+          <div class="kv"><span>Carbs</span><b>${t.carbs} g / day</b></div>
+          <div class="kv"><span>Fat</span><b>${t.fat} g / day</b></div>
           <div class="kv"><span>Maintenance</span><b>${g.maintenance.toLocaleString()} kcal</b></div>
           <div class="kv"><span>Est. TDEE</span><b>${g.tdee.toLocaleString()} kcal</b></div>
           <div class="kv"><span>Steps</span><b>${g.steps} / day</b></div>
         </div>
-        ${g.note
-          ? `<p class="hint">${g.note}</p>`
-          : `<p class="hint">Carbs especially around training; fats moderate. Later phases ease toward ${g.maintenance.toLocaleString()} (and an optional slight surplus, ~${g.surplus.toLocaleString()}) to fuel power work. These are starting points — adjust by your weekly-average scale trend.</p>`}
+        <p class="hint">${t.hint} Carbs especially around training; fats moderate. These are starting points — adjust by your weekly-average scale trend.</p>
       </div>
 
       <div class="card">

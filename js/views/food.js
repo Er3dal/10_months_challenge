@@ -1,6 +1,7 @@
-import { state, profile, foodToday, foodTotals, addFood, deleteFood,
+import { state, profile, planNow, foodToday, foodTotals, addFood, deleteFood,
   myFoods, saveMyFood, deleteMyFood, recentFoods, notify } from '../state.js';
 import { lookupBarcode, searchFoods, scaleMacros } from '../food.js';
+import { targetForPhase } from '../program.js';
 import { startScanner } from '../scanner.js';
 import { $, val, escapeHTML, escapeAttr } from '../lib/dom.js';
 
@@ -19,7 +20,7 @@ export function cleanupFood() {
 }
 
 export function renderFood(v) {
-  const g = profile().program.macros;
+  const g = targetForPhase(profile().program, planNow().phase.n);
   const t = foodTotals();
   const f = ui();
   const recent = recentFoods(8);

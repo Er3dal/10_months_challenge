@@ -87,8 +87,7 @@ function wireCreate() {
     const accts = getAccounts();
     accts[u] = { pass: await hashPassword(p), profile, created: TODAY };
     saveAccounts(accts);
-    // seed the data store with the starting weight so the chart has an anchor
-    saveData(u, { daily: {}, weights: [{ date: TODAY, kg: profile.weight }], workouts: [] });
+    saveData(u, { daily: {}, weights: [], workouts: [] });
     signIn(u);
   };
 }
