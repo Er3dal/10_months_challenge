@@ -7,6 +7,10 @@ html,body{
   margin:0; background:var(--bg); color:var(--ink);
   font-family:'Barlow',system-ui,-apple-system,sans-serif;
   -webkit-font-smoothing:antialiased;
+  /* some browsers keep allowing pinch/double-tap zoom even with the viewport
+     meta tag locked down — this stops double-tap-to-zoom from eating taps on
+     buttons, without needing per-element rules */
+  touch-action:manipulation;
 }
 h1,h2,h3{ margin:0; }
 input,select,button{ font-family:inherit; }
