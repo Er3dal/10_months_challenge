@@ -14,6 +14,17 @@ export const getSession = () => store.get(SESSION_KEY);
 export const setSession = (u) => store.set(SESSION_KEY, u || '');
 
 // Spread stored data over the defaults so accounts created before a new field
-// existed (e.g. `food`) still get it filled in.
-export const loadData = (u) => ({ daily: {}, weights: [], workouts: [], food: {}, myfoods: [], ...jget(dataKey(u), {}) });
+// existed (e.g. `food`) still get it filled in. `settings` is merged one
+// level deeper so an account saved before a new setting existed (e.g.
+// todayStyle) still gets that one default filled in, without losing any
+// other settings already saved.
+export const loadData = (u) => {
+  const stored = jget(dataKey(u), {});
+  return {
+    daily: {}, weights: [], workouts: [], food: {}, myfoods: [], steps: {},
+    settings: { todayStyle: 'cards' },
+    ...stored,
+    settings: { todayStyle: 'cards', ...(stored.settings || {}) },
+  };
+};
 export const saveData = (u, d) => jset(dataKey(u), d);

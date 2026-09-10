@@ -1,50 +1,62 @@
-import { state, setDaily, streak } from '../state.js';
+// Today tab — picks one of four interchangeable display styles (a per-account
+// preference) and renders it. All four styles share the same underlying data
+// and the same interactive elements (#mob, [data-s], #wq/#wqb, #sq/#sqb,
+// #drillT/#drills) so this file's wiring works regardless of which one is on
+// screen.
+import { state, setDaily, streak, todayChecklist, setTodayStyle } from '../state.js';
 import { attemptLogWeight } from '../lib/weightPrompt.js';
-import { MOBILITY, SUPPS } from '../program.js';
+import { attemptLogSteps } from '../lib/stepsPrompt.js';
+import { STEP_GOAL } from '../program.js';
 import { TODAY } from '../lib/dates.js';
 import { $, val } from '../lib/dom.js';
+import { renderCards } from './today/cards.js';
+import { renderGrid } from './today/grid.js';
+import { renderChecklist } from './today/checklist.js';
+import { renderFocus } from './today/focus.js';
+
+const STYLES = [
+  ['cards', 'Cards', renderCards],
+  ['grid', 'Grid', renderGrid],
+  ['checklist', 'Checklist', renderChecklist],
+  ['focus', 'Focus', renderFocus],
+];
 
 export function renderToday(v) {
   const d = state.data.daily[TODAY] || {};
   const s = streak();
-  const last = state.data.weights[state.data.weights.length - 1];
+  const weights = state.data.weights;
+  const last = weights[weights.length - 1];
+  const loggedToday = !!(last && last.date === TODAY);
+  const checklist = todayChecklist();
+  const stepsToday = (state.data.steps || {})[TODAY];
+  const style = (state.data.settings && state.data.settings.todayStyle) || 'cards';
+  const entry = STYLES.find((x) => x[0] === style) || STYLES[0];
+
+  const ctx = {
+    d, s, last, loggedToday, todayKg: loggedToday ? last.kg : null,
+    weights, checklist, stepsToday, stepGoal: STEP_GOAL,
+  };
 
   v.innerHTML = `
-    <div class="stack">
-      <div class="hero">
-        <div class="hero-num cond">${s}</div>
-        <div>
-          <div class="hero-word cond">day${s === 1 ? '' : 's'} in a row</div>
-          <div class="hero-sub">Mobility is the one daily rule. This number is the whole game.</div>
-        </div>
-      </div>
+    <div class="tabs" style="margin-bottom:14px">${STYLES.map(([id, label]) =>
+      `<button data-style="${id}" class="${id === entry[0] ? 'on' : ''}">${label}</button>`
+    ).join('')}</div>
+    ${entry[2](ctx)}`;
 
-      <div class="card">
-        <div class="card-top"><h3>Today’s mobility</h3><span class="tag">10 min · warm</span></div>
-        <button class="toggle ${d.mobility ? 'on' : ''}" id="mob">${d.mobility ? '✓ Done today' : 'Mark today’s routine done'}</button>
-        <button class="link" id="drillT" aria-expanded="false">▸ The 8 drills</button>
-        <ul class="drills" id="drills" hidden>${MOBILITY.map((x) => `<li>${x}</li>`).join('')}</ul>
-      </div>
+  v.querySelectorAll('[data-style]').forEach((b) => {
+    b.onclick = () => setTodayStyle(b.dataset.style);
+  });
 
-      <div class="card">
-        <div class="card-top"><h3>Supplements</h3></div>
-        <div class="chips">${SUPPS.map((su) =>
-          `<button class="chip ${d[su.id] ? 'on' : ''}" data-s="${su.id}"><b>${d[su.id] ? '✓ ' : ''}${su.label}</b><small>${su.note}</small></button>`
-        ).join('')}</div>
-      </div>
-
-      <div class="card">
-        <div class="card-top"><h3>Weight</h3>${last ? `<span class="tag">last: ${last.kg}kg</span>` : ''}</div>
-        <div class="inline"><input id="wq" inputmode="decimal" placeholder="e.g. 96.4"><button class="btn" id="wqb">Log</button></div>
-        <p class="hint">Weigh 2–3 mornings a week. Trends win, not single days.</p>
-      </div>
-    </div>`;
-
-  $('mob').onclick = () => setDaily('mobility', !d.mobility);
-  $('drillT').onclick = (e) => {
+  const mob = $('mob');
+  if (mob) mob.onclick = () => setDaily('mobility', !d.mobility);
+  const drillT = $('drillT');
+  if (drillT) drillT.onclick = (e) => {
     const el = $('drills'); const open = el.hidden; el.hidden = !open;
     e.currentTarget.setAttribute('aria-expanded', String(open));
   };
-  v.querySelectorAll('.chip').forEach((c) => { c.onclick = () => setDaily(c.dataset.s, !d[c.dataset.s]); });
-  $('wqb').onclick = () => attemptLogWeight(val('wq'));
+  v.querySelectorAll('[data-s]').forEach((c) => { c.onclick = () => setDaily(c.dataset.s, !d[c.dataset.s]); });
+  const wqb = $('wqb');
+  if (wqb) wqb.onclick = () => attemptLogWeight(val('wq'));
+  const sqb = $('sqb');
+  if (sqb) sqb.onclick = () => attemptLogSteps(val('sq'));
 }

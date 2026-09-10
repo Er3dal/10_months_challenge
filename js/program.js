@@ -27,6 +27,11 @@ export const SUPPS = [
   { id: 'whey', label: 'Whey', note: 'as needed' },
 ];
 
+// Manual daily step entry — no phone/health-app integration is possible from
+// a plain static web app (Apple HealthKit has no web API; Google Fit's API
+// is being retired and its replacement, Health Connect, is native-app-only).
+export const STEP_GOAL = 10000;
+
 export const TEMPLATES = {
   legsA: { label: 'Legs A', ex: ['Leg press', 'Goblet / box squat', 'Leg extension', 'Calf raise'] },
   legsB: { label: 'Legs B', ex: ['Hip thrust', 'Leg curl', 'Split squat', 'Leg press (feet high)', 'Calf raise'] },

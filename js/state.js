@@ -2,7 +2,7 @@
 // Every mutator persists then calls notify() so the UI re-renders.
 import { getAccount, getProfile, getSession, setSession, loadData, saveData } from './accounts.js';
 import { TODAY, addDays, daysBetween } from './lib/dates.js';
-import { phaseForMonth } from './program.js';
+import { phaseForMonth, targetForPhase, STEP_GOAL } from './program.js';
 
 export const state = {
   screen: 'auth',   // 'auth' | 'app'
@@ -40,16 +40,49 @@ export function signOut() {
 
 export const profile = () => getProfile(state.user);
 
-export function planNow() {
-  const pr = profile();
-  const day = Math.max(1, daysBetween(pr.startDate, TODAY) + 1);
+// Day/month/phase for an arbitrary date, given a profile — shared by
+// planNow() (today) and streak() (every day it walks back over).
+function planFor(pr, d) {
+  const day = Math.max(1, daysBetween(pr.startDate, d) + 1);
   const month = Math.min(10, Math.max(1, Math.floor((day - 1) / 30) + 1));
   return { day, month, phase: phaseForMonth(month) };
 }
 
+export function planNow() {
+  return planFor(profile(), TODAY);
+}
+
+// The six things a day needs for the streak to count it: mobility done, the
+// two daily supplements (creatine + vitamin D — whey is "as needed" so it's
+// not required), weight logged, food logged at or under that day's calorie
+// goal, and steps (manually entered — no phone/health-app can be read from a
+// plain static web app) at or over the daily step goal.
+function dayChecklist(d) {
+  const day = state.data.daily[d] || {};
+  const weights = state.data.weights;
+  const food = (state.data.food || {})[d] || [];
+  const stepsLogged = (state.data.steps || {})[d];
+  const pr = profile();
+  const kcalGoal = targetForPhase(pr.program, planFor(pr, d).phase.n).kcal;
+  const kcal = food.reduce((a, f) => a + (f.kcal || 0), 0);
+
+  return [
+    { key: 'mobility', label: 'Mobility', ok: !!day.mobility },
+    { key: 'creatine', label: 'Creatine', ok: !!day.creatine },
+    { key: 'vitd', label: 'Vitamin D', ok: !!day.vitd },
+    { key: 'weight', label: 'Weigh-in', ok: weights.some((w) => w.date === d) },
+    { key: 'kcal', label: 'Calories', ok: food.length > 0 && kcal <= kcalGoal },
+    { key: 'steps', label: 'Steps', ok: stepsLogged != null && stepsLogged >= STEP_GOAL },
+  ];
+}
+
+// Today's checklist breakdown, for the "N of 6 today" dots.
+export function todayChecklist() {
+  return dayChecklist(TODAY);
+}
+
 export function streak() {
-  const daily = state.data.daily;
-  const done = (d) => !!(daily[d] && daily[d].mobility);
+  const done = (d) => dayChecklist(d).every((c) => c.ok);
   let d = TODAY, s = 0;
   if (!done(d)) d = addDays(d, -1);
   while (done(d)) { s++; d = addDays(d, -1); }
@@ -69,6 +102,20 @@ export function logWeight(kg) {
   W.push({ date: TODAY, kg });
   W.sort((a, b) => a.date.localeCompare(b.date));
   state.data.weights = W;
+  persist(); onChange();
+}
+
+// Manual step entry for today — overwritten on each log (steps only climb
+// through the day, so there's no need for the once-a-day overwrite guard
+// weight logging uses).
+export function logSteps(n) {
+  state.data.steps = { ...(state.data.steps || {}), [TODAY]: n };
+  persist(); onChange();
+}
+
+// Which of the four Today layouts to render — a per-account preference.
+export function setTodayStyle(style) {
+  state.data.settings = { ...state.data.settings, todayStyle: style };
   persist(); onChange();
 }
 
