@@ -4,6 +4,24 @@
 const OFF = 'https://world.openfoodfacts.org';
 const num = (n) => { const x = parseFloat(n); return isNaN(x) ? 0 : Math.round(x * 10) / 10; };
 
+// The very first request to Open Food Facts in a session sometimes hits a cold
+// connection (fresh DNS/TLS handshake) or a slow response from their free API
+// and fails, while an identical retry — now warm — succeeds. One quiet retry
+// here means the caller usually doesn't see that first hiccup at all.
+async function fetchJSON(url, retries = 1) {
+  let lastErr;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.json();
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr;
+}
+
 function normalize(p) {
   const n = p.nutriments || {};
   const per100 = {
@@ -31,14 +49,17 @@ export async function lookupBarcode(code) {
   }
 }
 
+// Returns { ok, results } instead of a bare array, so a failed request (bad
+// connection, OFF hiccup) can be told apart from a genuine "no matches" —
+// the two used to look identical to the UI.
 export async function searchFoods(query) {
   try {
     const url = `${OFF}/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20&fields=product_name,brands,nutriments,serving_size`;
-    const r = await fetch(url);
-    const j = await r.json();
-    return (j.products || []).map(normalize).filter((x) => x.per100.kcal > 0).slice(0, 15);
+    const j = await fetchJSON(url);
+    const results = (j.products || []).map(normalize).filter((x) => x.per100.kcal > 0).slice(0, 15);
+    return { ok: true, results };
   } catch (e) {
-    return [];
+    return { ok: false, results: [] };
   }
 }
 

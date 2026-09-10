@@ -7,7 +7,7 @@ import { $, val, escapeHTML, escapeAttr } from '../lib/dom.js';
 
 // transient sub-state for this tab lives on state.ui.food
 function ui() { return (state.ui.food = state.ui.food || { mode: null }); }
-function setMode(mode) { stopScan(); ui().mode = mode; ui().pending = null; ui().results = null; ui().msg = ''; notify(); }
+function setMode(mode) { stopScan(); ui().mode = mode; ui().pending = null; ui().results = null; ui().searchFailed = false; ui().query = ''; ui().msg = ''; notify(); }
 function stopScan() { const f = ui(); if (f.stop) { try { f.stop(); } catch (e) {} f.stop = null; } }
 
 // Called by the router when navigating away or logging out, so the camera
@@ -156,9 +156,10 @@ function searchPanel(f) {
   const results = f.results;
   return `<div class="card panel">
     <div class="card-top"><h3>Search foods</h3><button class="link muted-link" id="close">Close</button></div>
-    <div class="inline"><input id="q" placeholder="e.g. greek yogurt"><button class="btn" id="qgo">Search</button></div>
+    <div class="inline"><input id="q" value="${escapeAttr(f.query || '')}" placeholder="e.g. greek yogurt"><button class="btn" id="qgo">Search</button></div>
     ${f.loading ? `<p class="hint">Searching…</p>` : ''}
-    ${results ? (results.length ? `<div class="results">${results.map((r, i) =>
+    ${f.searchFailed ? `<p class="err">Search failed — check your connection and try again.</p>` : ''}
+    ${(!f.loading && !f.searchFailed && results) ? (results.length ? `<div class="results">${results.map((r, i) =>
       `<button class="result" data-i="${i}"><b>${escapeHTML(r.name)}</b><small>${r.per100.kcal} kcal · P${r.per100.protein} C${r.per100.carbs} F${r.per100.fat} per 100g</small></button>`
     ).join('')}</div>` : `<p class="hint">No matches — try simpler words, or add it manually.</p>`) : ''}
   </div>`;
@@ -259,8 +260,9 @@ function wireSearch(f) {
   const go = $('qgo');
   const run = async () => {
     const q = val('q').trim(); if (!q) return;
-    f.loading = true; f.results = null; notify();
-    f.results = await searchFoods(q); f.loading = false; notify();
+    f.query = q; f.loading = true; f.results = null; f.searchFailed = false; notify();
+    const res = await searchFoods(q);
+    f.results = res.results; f.searchFailed = !res.ok; f.loading = false; notify();
   };
   if (go) go.onclick = run;
   const q = $('q'); if (q) q.onkeydown = (e) => { if (e.key === 'Enter') run(); };
