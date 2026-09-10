@@ -66,19 +66,34 @@ export function renderFood(v) {
 }
 
 /* ---------- totals visuals ---------- */
+// Bars go green while you're comfortably under goal, amber once you're
+// closing in on it (>=90%), red once you've gone over, and a distinct
+// "perfect" blue when you land within 5 (either side) of the goal — that
+// check wins over the others, so a near-exact hit always stands out.
+function statusClass(have, goal) {
+  if (!goal) return '';
+  if (Math.abs(have - goal) <= 5) return ' perfect';
+  const pct = (have / goal) * 100;
+  if (pct >= 100) return ' over';
+  if (pct >= 90) return ' warn';
+  return '';
+}
+
 function ring(label, have, goal, unit) {
   const pct = goal ? Math.min(100, Math.round((have / goal) * 100)) : 0;
   const left = Math.max(0, goal - have);
+  const exact = goal != null && Math.round(have) === goal;
   return `<div class="cals">
-    <div><div class="cals-have cond">${Math.round(have).toLocaleString()}</div><div class="cals-sub">${label} · ${left} ${unit} left</div></div>
-    <div class="cals-track"><div class="cals-fill" style="width:${pct}%"></div></div>
+    <div><div class="cals-have cond">${Math.round(have).toLocaleString()}</div><div class="cals-sub">${label} · ${left} ${unit} left${exact ? ' \uD83D\uDC8E' : ''}</div></div>
+    <div class="cals-track"><div class="cals-fill${statusClass(have, goal)}" style="width:${pct}%"></div></div>
   </div>`;
 }
 function bar(label, have, goal) {
   const pct = goal ? Math.min(100, Math.round((have / goal) * 100)) : 0;
+  const exact = goal != null && Math.round(have) === goal;
   return `<div class="mb">
-    <div class="mb-top"><span>${label}</span><span>${Math.round(have)} / ${goal}g</span></div>
-    <div class="mb-track"><div class="mb-fill" style="width:${pct}%"></div></div>
+    <div class="mb-top"><span>${label}</span><span>${Math.round(have)} / ${goal}g${exact ? ' \uD83D\uDC8E' : ''}</span></div>
+    <div class="mb-track"><div class="mb-fill${statusClass(have, goal)}" style="width:${pct}%"></div></div>
   </div>`;
 }
 function foodRow(f) {

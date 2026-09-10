@@ -78,11 +78,20 @@
 .cals-have{ font-family:'Barlow Condensed','Barlow',sans-serif; font-weight:700; font-size:38px; line-height:.9; color:var(--green); }
 .cals-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
 .cals-track{ height:9px; background:#eef2f0; border-radius:999px; overflow:hidden; }
-.cals-fill{ height:100%; background:var(--green); border-radius:999px; transition:width .25s; }
+.cals-fill{ height:100%; background:var(--green); border-radius:999px; transition:width .25s, background-color .25s; }
+/* status: green while under goal, amber once close, red once over, and a
+   distinct blue when you land right on target (within 5) — the number next
+   to every bar always shows the exact value too, so color isn't the only signal */
+.cals-fill.warn{ background:var(--amber); }
+.cals-fill.over{ background:var(--red); }
+.cals-fill.perfect{ background:var(--perfect); }
 .macro-bars{ display:flex; flex-direction:column; gap:10px; margin-top:14px; }
 .mb-top{ display:flex; justify-content:space-between; font-size:12px; color:#3c4340; margin-bottom:4px; }
 .mb-track{ height:7px; background:#eef2f0; border-radius:999px; overflow:hidden; }
-.mb-fill{ height:100%; background:#7fbf9c; border-radius:999px; transition:width .25s; }
+.mb-fill{ height:100%; background:#7fbf9c; border-radius:999px; transition:width .25s, background-color .25s; }
+.mb-fill.warn{ background:var(--amber); }
+.mb-fill.over{ background:var(--red); }
+.mb-fill.perfect{ background:var(--perfect); }
 
 .add-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
 .add-btn{ border:1.5px solid var(--field); background:#fff; border-radius:13px; padding:12px 6px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; font-weight:600; font-size:12.5px; color:var(--ink); }
